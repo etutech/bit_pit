@@ -1,0 +1,63 @@
+.spinner svg {
+  fill: none;
+  margin: auto;
+}
+
+.spinner svg circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%
+}
+
+.spinner svg .twirl {
+  stroke-dasharray: 105 314;
+  stroke-dashoffset: 105.1;
+  animation: spinnerCircle 1.8s ease-in-out infinite
+}
+
+.spinner svg .l1 {
+  stroke: var(--color-secondary);
+  opacity: 0.9;
+  stroke-width: 25
+}
+
+.spinner svg .l2 {
+  stroke: var(--color-secondary);
+  stroke-width: 20;
+  opacity: 0.9;
+  animation-delay: .5s
+}
+
+.spinner svg .l3 {
+  stroke: var(--color-primary);
+  stroke-width: 16;
+  opacity: 0.9;
+  animation-direction: reverse
+}
+
+.spinner svg .dot {
+  fill: var(--color-warning);
+  opacity: 0.9;
+  animation: spinnerPulse 1.8s ease-in-out infinite
+}
+
+@keyframes spinnerCircle {
+  0% {
+    stroke-dashoffset: 105.1
+  }
+
+  to {
+    stroke-dashoffset: -314
+  }
+}
+
+@keyframes spinnerPulse {
+
+  0%,
+  to {
+    transform: scale(.1)
+  }
+
+  50% {
+    transform: scale(1)
+  }
+}

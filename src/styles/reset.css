@@ -1,0 +1,29 @@
+@layer base {
+  img {
+    width: auto;
+    height: auto;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-nunito);
+  }
+
+  a:hover {
+    opacity: 0.85;
+  }
+}
+
+/******* ENV ******/
+.ENV--development .hideInDev {
+  visibility: hidden;
+}
+
+/** set opacity when in dark theme **/
+body[data-theme="dark"] .theme-bg {
+  opacity: 0.85;
+}

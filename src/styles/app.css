@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+@import "./themes.css";
+
+@import "./reset.css";
+
+/******* loading ******/
+.loading-dot {
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+  text-align: left;
+  vertical-align: -.25em;
+  overflow: hidden
+}
+
+.loading-dot:before {
+  display: block;
+  content: "...\A..\A.";
+  white-space: pre-wrap;
+  animation: dot 1.5s step-start infinite both
+}
+
+@keyframes dot {
+  33% {
+    transform: translateY(-2em)
+  }
+
+  66% {
+    transform: translateY(-1em)
+  }
+}
