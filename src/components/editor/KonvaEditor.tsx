@@ -9,6 +9,7 @@ import { CaseSensitiveIcon, CircleIcon, ShareIcon, SquareIcon, Trash2Icon } from
 import { NodeConfig } from "konva/lib/Node"
 import eventBus from "@/lib/events/eventBus"
 import './style.css'
+import { cn } from "@/lib/utils"
 
 interface ShapeBase {
   id: string;
@@ -394,26 +395,28 @@ const KonvaEditor = () => {
   return (
     <div className="p-4">
       <div className="flex flex-row gap-2 items-center mb-1" style={{ maxWidth: 900 }}>
-        <button onClick={addRectangle} className="btn btn-square btn-accent btn-outline rounded-md">
+        <button onClick={addRectangle} className="btn btn-square btn-neutral rounded-md">
           <SquareIcon />
         </button>
-        <button onClick={addCircle} className="btn btn-square btn-accent btn-outline rounded-md">
+        <button onClick={addCircle} className="btn btn-square btn-neutral rounded-md">
           <CircleIcon />
         </button>
         {/* Update Add Text button */}
-        <button onClick={openTextModal} className="btn btn-square btn-accent btn-outline rounded-md">
+        <button onClick={openTextModal} className="btn btn-square btn-neutral rounded-md">
           <CaseSensitiveIcon />
         </button>
-        <button onClick={handleDeleteShape} className="btn btn-square btn-error rounded-md" disabled={!selectedShapeId}>
-          <Trash2Icon />
+        <button onClick={handleDeleteShape} className="btn btn-square btn-error ml-4 rounded-md btn-sm text-white" disabled={!selectedShapeId}>
+          <Trash2Icon size={16} />
         </button>
 
         {isTextSelected && selectedTextShape && (
-          <div className="flex py-1 px-2 flex-row gap-2 items-center border border-accent rounded-md">
-            <button onClick={toggleBold}>
-              {selectedTextShape.fontStyle?.includes('bold') ? 'Remove Bold' : 'Add Bold'}
+          <div className="flex py-0.5 px-1 ml-4 flex-row gap-2 items-center border border-accent/20 bg-base-100 h-10  rounded-md">
+            <button onClick={toggleBold} className={cn("btn btn-square btn-sm rounded-md", {
+              'bg-neutral text-white': selectedTextShape.fontStyle?.includes('bold'),
+              'btn-outline': !selectedTextShape.fontStyle?.includes('bold'),
+            })}>B
             </button>
-            <select value={selectedTextShape.fontFamily} onChange={changeFontFamily} className="select select-sm select-primary w-48">
+            <select value={selectedTextShape.fontFamily} onChange={changeFontFamily} className="select select-primary select-sm rounded-md w-48">
               <option value="Arial">Arial</option>
               <option value="Verdana">Verdana</option>
               <option value="Times New Roman">Times New Roman</option>
@@ -425,8 +428,8 @@ const KonvaEditor = () => {
         )}
 
 
-        <button onClick={exportToLbrn} className="ml-auto btn btn-accent rounded-full">
-          <ShareIcon /> Export
+        <button onClick={exportToLbrn} className="ml-auto btn btn-primary btn-sm rounded-full px-4">
+          <ShareIcon size={16} />Export
         </button>
       </div>
 

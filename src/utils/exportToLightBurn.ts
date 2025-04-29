@@ -16,7 +16,8 @@ const DEFAULT_CUT_SETTINGS = '<CutSettings/>'
 type Shape = Konva.NodeConfig
 
 const transformCoords = (shape: Shape) => {
-  const { x, y, width, height, scaleX = 1, scaleY = 1 } = shape
+  const { x, y, width, height, scaleX = 1, scaleY = 1, rotation = 0 } = shape
+
   if (shape.type.toLowerCase() === 'circle') {
     return {
       x: (x + shape.radius * scaleX / 2) / 3,
@@ -24,7 +25,8 @@ const transformCoords = (shape: Shape) => {
       width: shape.radius / 3,
       height: shape.radius / 3,
       scaleX,
-      scaleY
+      scaleY,
+      rotation
     }
   }
   return {
@@ -33,8 +35,18 @@ const transformCoords = (shape: Shape) => {
     width: width / 3,
     height: height / 3,
     scaleX,
-    scaleY
+    scaleY,
+    rotation
   }
+}
+
+function getMatrix(coords: ReturnType<typeof transformCoords>) {
+  const { rotation, x, y } = coords
+  // 将角度转换为弧度
+  const radians = rotation * (Math.PI / 180)
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  return `${cos} ${-sin} ${sin} ${cos} ${x} ${y}`
 }
 /**
  * Generates shape XML for LightBurn file
@@ -47,22 +59,22 @@ const generateShapeXML = (shape: Shape, _index: number): string => {
   //   <XForm>1 0 0 1 0 0 </XForm>${generateRectPathData(shape)}
   //     </BackupPath>
   const coords = transformCoords(shape)
-  console.log(shape, coords)
+
   if (shape.type.toLowerCase() === 'rect') {
     shapeXML = `
     <Shape Type="Rect" CutIndex="${cutIndex}" W="${coords.width}" H="${coords.height}" Rad="0" HasBackupPath="0">
-      <XForm>${coords.scaleX || 1} 0 0 ${coords.scaleY || 1} ${coords.x} ${coords.y}</XForm>
+      <XForm>${getMatrix(coords)}</XForm>
     </Shape>`
   } else if (shape.type.toLowerCase() === 'circle') {
     shapeXML = `
     <Shape Type="Ellipse" CutIndex="${cutIndex}" Rx="${coords.width}" Ry="${coords.height}" HasBackupPath="0">
-      <XForm>${coords.scaleX || 1} 0 0 ${coords.scaleY || 1} ${coords.x} ${coords.y}</XForm>
+      <XForm>${getMatrix(coords)}</XForm>
     </Shape>`
   } else if (shape.type.toLowerCase() === 'text') {
     // Text shapes need special handling
     shapeXML = `
-    <Shape Type="Text" CutIndex="${cutIndex}" Font="Arial,-1,100,5,50,0,0,0,0,0" Str="${shape.text}" H="${coords.height}" LS="0" LnS="0" Ah="0" Av="0" Weld="0" HasBackupPath="0">
-      <XForm>${coords.scaleX || 1} 0 0 ${coords.scaleY || 1} ${coords.x} ${coords.y}</XForm>
+    <Shape Type="Text" CutIndex="${cutIndex}" Font="${shape.fontFamily},-1,100,5,50,0,0,0,0,0" Str="${shape.text}" H="${Math.round(coords.height)}" LS="0" LnS="0" Ah="0" Av="0" Bold="${shape.fontStyle === 'bold' ? '1' : '0'}" Weld="0" HasBackupPath="0">
+      <XForm>${getMatrix(coords)}</XForm>
     </Shape>`
   }
 
@@ -74,7 +86,7 @@ const generateShapeXML = (shape: Shape, _index: number): string => {
  */
 export const exportToLightBurn = (shapes: Shape[], thumbnail: string): string => {
   const shapesXML = shapes.map((shape, index) => generateShapeXML(shape, index)).join('\n')
-
+  // if (1) return
   const lightBurnXML = `${XML_HEADER}
 ${LIGHTBURN_PROJECT_START}
     <Thumbnail Source="${thumbnail || DEFAULT_THUMBNAIL}"/>

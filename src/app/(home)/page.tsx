@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const HomePage = () => {
   return (
     <AppPage className="p-8">
-      <div className="bg-amber-100/40 mx-auto">
+      <div className="bg-amber-100/30 mx-auto">
         <KonvaEditor />
       </div>
     </AppPage>
