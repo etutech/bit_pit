@@ -4,8 +4,6 @@
  */
 
 import * as fs from 'fs'
-import * as path from 'path'
-import { DOMParser, XMLSerializer } from 'xmldom'
 
 // Types
 interface Vertex {

@@ -16,7 +16,6 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.3",
     "@tailwindcss/typography": "^0.5.15",
-    "@types/xmldom": "^0.1.34",
     "daisyui": "^5.0.0",
     "dayjs": "^1.11.13",
     "js-cookie": "^3.0.5",
@@ -30,8 +29,7 @@
     "react-konva": "^19.0.3",
     "tailwind-merge": "^3.2.0",
     "tailwindcss": "^4.1.0",
-    "uuid": "^11.1.0",
-    "xmldom": "^0.6.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.3.0",
