@@ -1,5 +1,5 @@
 "use client"
-/* eslint-disable max-len */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Circle, Layer, Rect, Stage, Text, Transformer } from 'react-konva'
 import Konva from 'konva'
@@ -57,26 +57,131 @@ const CanvasComponent: React.FC<{
   selectedShapeId: string | null;
   onSelectShape: (id: string | null) => void;
   onTransformEnd: (id: string, newAttrs: Partial<ShapeBase>) => void;
-}> = ({ shapes, selectedShapeId, onSelectShape, onTransformEnd }) => {
+  onDeleteShape: (id: string) => void;
+}> = ({ shapes, selectedShapeId, onSelectShape, onTransformEnd, onDeleteShape }) => {
   const stageRef = useRef<Konva.Stage>(null)
   const layerRef = useRef<Konva.Layer>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
+  const deleteAnchorRef = useRef<Konva.Group | null>(null)
 
+  // Function to create or update the delete anchor
+  const updateDeleteAnchor = useCallback(() => {
+    if (!selectedShapeId || !transformerRef.current) return
+
+    // If the delete anchor doesn't exist, create it
+    if (!deleteAnchorRef.current) {
+      // Create a group for the delete anchor
+      const deleteAnchorGroup = new Konva.Group({
+        name: 'delete-anchor-group',
+        cursor: 'pointer'
+      })
+
+      // Create the circle background
+      const circle = new Konva.Circle({
+        radius: 12,
+        fill: 'red',
+        stroke: 'white',
+        strokeWidth: 1,
+        name: 'delete-anchor'
+      })
+
+      // Create the "X" symbol with Text
+      const deleteSymbol = new Konva.Text({
+        text: '✕',
+        fontSize: 14,
+        fontFamily: 'Arial',
+        fill: 'white',
+        align: 'center',
+        verticalAlign: 'middle',
+        x: -5,
+        y: -7,
+      })
+
+      // Add shapes to the group
+      deleteAnchorGroup.add(circle)
+      deleteAnchorGroup.add(deleteSymbol)
+
+      // Add click handler to the group
+      deleteAnchorGroup.on('click tap', () => {
+        onDeleteShape(selectedShapeId)
+      })
+
+      // Add the delete anchor to the layer
+      layerRef.current?.add(deleteAnchorGroup)
+
+      // Store reference to the group
+      deleteAnchorRef.current = deleteAnchorGroup as any // Type casting as we're using Group instead of Circle
+    }
+
+    // Position the delete anchor at the top-right of the transformer
+    const tr = transformerRef.current
+    const box = tr.getClientRect()
+
+    if (deleteAnchorRef.current) {
+      deleteAnchorRef.current.position({
+        x: box.x + box.width,
+        y: box.y - 8 // Position it slightly above the corner
+      })
+      layerRef.current?.batchDraw()
+    }
+  }, [selectedShapeId, onDeleteShape])
+
+  // Update the delete anchor whenever the transformer changes
   useEffect(() => {
     if (transformerRef.current && selectedShapeId) {
       const stage = stageRef.current
       const selectedNode = stage?.findOne(`#${selectedShapeId}`)
       if (selectedNode) {
         transformerRef.current.nodes([selectedNode])
+        const shape = shapes.find(s => s.id === selectedShapeId)
+        console.log(shape)
+        if (shape.type === 'Text' || shape.type === 'Circle') {
+          transformerRef.current.enabledAnchors(
+            ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+          )
+        } else {
+          transformerRef.current.enabledAnchors([
+            'top-left', 'top-center', 'top-right',
+            'middle-left', 'middle-right',
+            'bottom-left', 'bottom-center', 'bottom-right'
+          ])
+        }
+
+        // Create or update the delete anchor
+        updateDeleteAnchor()
+
+        // Make the transformer update the delete anchor whenever it transforms
+        const updateOnTransform = () => updateDeleteAnchor()
+        transformerRef.current.on('transform', updateOnTransform)
+        transformerRef.current.on('transformend', updateOnTransform)
+
       } else {
         transformerRef.current.nodes([])
+        // Remove delete anchor if no shape is selected
+        if (deleteAnchorRef.current) {
+          deleteAnchorRef.current.remove()
+          deleteAnchorRef.current = null
+        }
       }
       transformerRef.current.getLayer()?.batchDraw()
     } else if (transformerRef.current) {
       transformerRef.current.nodes([])
+      // Remove delete anchor if no shape is selected
+      if (deleteAnchorRef.current) {
+        deleteAnchorRef.current.remove()
+        deleteAnchorRef.current = null
+      }
       transformerRef.current.getLayer()?.batchDraw()
     }
-  }, [selectedShapeId])
+
+    // Cleanup event listeners
+    return () => {
+      if (transformerRef.current) {
+        transformerRef.current.off('transform')
+        transformerRef.current.off('transformend')
+      }
+    }
+  }, [selectedShapeId, shapes, updateDeleteAnchor])
 
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
     // Click on empty stage = deselect
@@ -84,6 +189,15 @@ const CanvasComponent: React.FC<{
       onSelectShape(null)
       return
     }
+
+    // If clicked on delete anchor or its children, don't propagate
+    if (
+      e.target === deleteAnchorRef.current ||
+      (e.target.getParent && e.target.getParent() === deleteAnchorRef.current)
+    ) {
+      return
+    }
+
     // Click on shape = select
     const clickedOnTransformer = e.target.getParent()?.className === 'Transformer'
     if (clickedOnTransformer) {
@@ -117,6 +231,9 @@ const CanvasComponent: React.FC<{
       scaleX, // Pass scaleX and scaleY to the parent
       scaleY,
     })
+
+    // Update delete anchor position after transform
+    updateDeleteAnchor()
   }
 
   const handleExport = () => {
@@ -161,6 +278,8 @@ const CanvasComponent: React.FC<{
             draggable: true,
             onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
               onTransformEnd(shape.id, { x: e.target.x(), y: e.target.y() })
+              // Update delete anchor position after drag
+              updateDeleteAnchor()
             },
             onTransformEnd: handleTransformEnd,
           }
@@ -205,6 +324,12 @@ const CanvasComponent: React.FC<{
             if (newBox.width < 5 || newBox.height < 5) return oldBox
             return newBox
           }}
+          // Basic transformer styling
+          anchorSize={8}
+          anchorFill="#0096ff"
+          anchorStroke="#ffffff"
+          anchorStrokeWidth={1}
+          anchorCornerRadius={4}
         />
       </Layer>
     </Stage>
@@ -405,18 +530,23 @@ const KonvaEditor = () => {
         <button onClick={openTextModal} className="btn btn-square btn-neutral rounded-md">
           <CaseSensitiveIcon />
         </button>
-        <button onClick={handleDeleteShape} className="btn btn-square btn-error ml-4 rounded-md btn-sm text-white" disabled={!selectedShapeId}>
+        <button onClick={handleDeleteShape}
+          className="btn btn-square btn-error ml-4 rounded-md btn-sm text-white" disabled={!selectedShapeId}
+        >
           <Trash2Icon size={16} />
         </button>
 
         {isTextSelected && selectedTextShape && (
-          <div className="flex py-0.5 px-1 ml-4 flex-row gap-2 items-center border border-accent/20 bg-base-100 h-10  rounded-md">
+          <div className={`flex py-0.5 px-1 ml-4 flex-row gap-2 items-center border
+           border-accent/20 bg-base-100 h-10 rounded-md`}>
             <button onClick={toggleBold} className={cn("btn btn-square btn-sm rounded-md", {
               'bg-neutral text-white': selectedTextShape.fontStyle?.includes('bold'),
               'btn-outline': !selectedTextShape.fontStyle?.includes('bold'),
             })}>B
             </button>
-            <select value={selectedTextShape.fontFamily} onChange={changeFontFamily} className="select select-primary select-sm rounded-md w-48">
+            <select value={selectedTextShape.fontFamily}
+              onChange={changeFontFamily} className="select select-primary select-sm rounded-md w-48"
+            >
               <option value="Arial">Arial</option>
               <option value="Verdana">Verdana</option>
               <option value="Times New Roman">Times New Roman</option>
@@ -459,6 +589,7 @@ const KonvaEditor = () => {
         selectedShapeId={selectedShapeId}
         onSelectShape={handleSelectShape}
         onTransformEnd={handleTransformEnd}
+        onDeleteShape={handleDeleteShape}
       />
     </div>
   )
